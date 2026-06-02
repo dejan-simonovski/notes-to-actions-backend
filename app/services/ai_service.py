@@ -3,62 +3,73 @@ from typing import Any, Dict
 from openai import AsyncOpenAI
 from app.schemas.meeting_schema import AnalyzeResponse
 from app.exceptions.meeting_exception import AiServiceError
+from app.core.config.openai_config import settings
+from app.core.prompts import (
+    load_system_instruction,
+    load_map_prompt,
+    load_reduce_prompt,
+)
 
 class AiService:
     """
     Service layer interacting with OpenAI's API.
     Handles structured transcription analyses and free-text question answering.
     """
+
     def __init__(self, api_key: str | None = None):
-        self._api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self._api_key = settings.OPENAI_API_KEY
+        self.model_name = settings.OPENAI_MODEL
+        self.model_temperature = settings.OPENAI_TEMPERATURE
+        self.model_max_tokens = settings.OPENAI_MAX_TOKENS
         self._client = AsyncOpenAI(api_key=self._api_key)
+
 
     async def analyze_transcript(self, transcript: str) -> dict[str, Any]:
         """
-        Calls OpenAI using Structured Outputs to generate an executive summary
-        and extract action items prioritized via the Eisenhower Matrix.
+            Calls OpenAI using Structured Outputs to generate an executive summary
+            and extract action items prioritized via the Eisenhower Matrix.
+            Uses the SummarizationModel to preprocess the transcript using a Map-Reduce approach.
         """
-        if not self._api_key or self._api_key == "mock-key-replace-this-to-test-live-openai":
+        if not self._api_key:
             raise AiServiceError(
                 "OpenAI API Key is not configured. Please set the OPENAI_API_KEY environment variable."
             )
 
-        system_instruction = (
-            "You are a stellar meeting productivity assistant.\n"
-            "Analyze the meeting notes transcript and generate structured outputs strictly conforming to the JSON schema:\n"
-            "1. Extract or determine a fitting, concise 'title' for the meeting.\n"
-            "2. Synthesize an executive 'summary' capturing key updates, decisions made, and themes.\n"
-            "3. Build a list of 'action_items'. For each action item:\n"
-            "   - Extract a clear and active 'description'.\n"
-            "   - Identify the clear 'assignee_name' (default to 'Unassigned' if not mentioned).\n"
-            "   - Categorize the task priority ('priority') using the Eisenhower Matrix:\n"
-            "     * 'urgent_important': High impact, high time-sensitivity.\n"
-            "     * 'important_not_urgent': High impact, low time-sensitivity.\n"
-            "     * 'urgent_not_important': Low impact, high time-sensitivity.\n"
-            "     * 'low_priority': Low impact, low time-sensitivity.\n"
-            "   - Keep 'status' defaulting to 'to_do' as a placeholder.\n\n"
-            "Be comprehensive and ensure that the response adheres strictly to the model schema."
-        )
-
         try:
-            completion = await self._client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": f"Meeting Transcript:\n{transcript}"}
-                ],
-                response_format=AnalyzeResponse,
-                timeout=60.0
+            from app.llm import SummarizationModel, AnalysisModel
+
+            summarizer = SummarizationModel(
+                api_key=self._api_key,
+                model=self.model_name,
+                temperature=self.model_temperature,
+                max_tokens=self.model_max_tokens,
+                map_prompt=load_map_prompt(),
+                reduce_prompt=load_reduce_prompt(),
             )
 
-            response_data = completion.choices[0].message.parsed
-            if not response_data:
-                raise AiServiceError("OpenAI returned an empty structured output.")
+            analyzer = AnalysisModel(
+                api_key=self._api_key,
+                model=self.model_name,
+                temperature=self.model_temperature,
+                max_tokens=self.model_max_tokens,
+                system_instruction=load_system_instruction(),
+            )
+
+            summarized_content = await summarizer.summarize(transcript)
+
+            response_data = await analyzer.analyze(
+                content=f"Meeting Transcript Summary:\n{summarized_content}",
+                response_format=AnalyzeResponse,
+                timeout=10.0,
+            )
 
             return response_data.model_dump()
 
+        except AiServiceError:
+            raise
         except Exception as e:
             raise AiServiceError(f"Error calling OpenAI parsing service: {str(e)}")
+
 
     async def chat_with_transcript(self, transcript: str, question: str) -> str:
         """

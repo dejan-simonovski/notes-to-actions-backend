@@ -1,0 +1,6 @@
+reduce_prompt:
+  template: |
+    Write a coherent executive summary of this meeting based on the section summaries below.
+    Preserve all decisions and action items with clear ownership where mentioned:
+
+    {text}

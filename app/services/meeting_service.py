@@ -108,15 +108,13 @@ class MeetingService:
         Extracts transcript text from an uploaded file, analyzes it,
         posts to Slack in the background, and returns the response.
         """
-        # 1. Safely read and extract uploaded file text
-        raw_text = await document_utils.extract_text_from_file(file)
 
-        # 2. Call AI Service to get structured dictionary
+        raw_text = await document_utils.extract_text_from_file(file)
+        
         analysis_data = await self._ai_service.analyze_transcript(raw_text)
 
         analyze_response = AnalyzeResponse(**analysis_data)
 
-        # 3. Trigger Slack webhook in the background
         asyncio.create_task(self._send_slack_webhook(analyze_response))
 
         return ApiResponse[AnalyzeResponse](

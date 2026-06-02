@@ -11,26 +11,6 @@ from app.core.config.dependencies import get_meeting_service
 
 router = APIRouter(prefix="/api", tags=["Meetings"])
 
-@router.post(
-    "/analyze/url",
-    response_model=ApiResponse[AnalyzeResponse],
-    status_code=status.HTTP_200_OK,
-    summary="Analyze meeting transcript from a Google Doc or Web URL",
-    description=(
-        "Asynchronously fetches a remote transcript (e.g. Google Doc export link), "
-        "synthesizes an executive summary, extracts Action Items prioritized using the Eisenhower Matrix "
-        "via OpenAI Structured Outputs, dispatches the results to a Slack channel webhook, "
-        "and returns the structured data."
-    )
-)
-async def analyze_url(
-    request: AnalyzeRequest,
-    service: MeetingService = Depends(get_meeting_service)
-) -> ApiResponse[AnalyzeResponse]:
-    """
-    Endpoint to process meeting notes supplied as a document text export URL.
-    """
-    return await service.process_analysis_url(request)
 
 @router.post(
     "/analyze/file",
