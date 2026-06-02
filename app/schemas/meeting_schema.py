@@ -73,6 +73,10 @@ class AnalyzeResponse(BaseModel):
         ..., 
         description="List of action items extracted and prioritized from the meeting notes."
     )
+    key_topics: List[str] = Field(
+        ...,
+        description="List of key topics discussed in the meeting."
+    )
 
 class ChatRequest(BaseModel):
     """

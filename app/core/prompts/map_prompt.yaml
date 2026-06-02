@@ -1,0 +1,6 @@
+map_prompt:
+  template: |
+    Write a concise summary of the following meeting transcript section.
+    Capture key discussion points, decisions made, and any action items:
+
+    {text}
