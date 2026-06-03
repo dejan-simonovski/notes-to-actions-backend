@@ -75,26 +75,21 @@ class MeetingService:
             from app.exceptions.meeting_exception import DocumentExtractionError
             raise DocumentExtractionError("A valid URL must be provided in the request payload.")
 
-        # 1. Fetch transcript text
         raw_text = await document_utils.extract_text_from_url(str(request.url))
 
-        # Integrate context title and date to assist OpenAI's summary
         contextual_transcript = (
             f"Meeting Title Context: {request.title}\n"
             f"Meeting Date Context: {request.date}\n\n"
             f"Transcript Content:\n{raw_text}"
         )
 
-        # 2. Call AI Service to get structured dictionary
         analysis_data = await self._ai_service.analyze_transcript(contextual_transcript)
 
-        # Override title with the explicit one provided by user if preferred
         if request.title:
             analysis_data["title"] = request.title
 
         analyze_response = AnalyzeResponse(**analysis_data)
 
-        # 3. Trigger Slack integration in background asynchronously
         asyncio.create_task(self._send_slack_webhook(analyze_response))
 
         return ApiResponse[AnalyzeResponse](
@@ -103,20 +98,15 @@ class MeetingService:
             data=analyze_response
         )
 
-    async def process_analysis_file(self, file: UploadFile) -> ApiResponse[AnalyzeResponse]:
+    async def process_analysis_file(self, file: UploadFile, context: str = "") -> ApiResponse[AnalyzeResponse]:
         """
         Extracts transcript text from an uploaded file, analyzes it,
         posts to Slack in the background, and returns the response.
         """
-
         raw_text = await document_utils.extract_text_from_file(file)
-        
-        analysis_data = await self._ai_service.analyze_transcript(raw_text)
-
+        analysis_data = await self._ai_service.analyze_transcript(raw_text, context)
         analyze_response = AnalyzeResponse(**analysis_data)
-
         asyncio.create_task(self._send_slack_webhook(analyze_response))
-
         return ApiResponse[AnalyzeResponse](
             success=True,
             message="Uploaded transcript file successfully analyzed.",

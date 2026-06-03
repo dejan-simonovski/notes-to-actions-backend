@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, UploadFile, status, Form
 from app.schemas.api_response_schema import ApiResponse
 from app.schemas.meeting_schema import (
     AnalyzeRequest,
@@ -10,7 +10,6 @@ from app.services.meeting_service import MeetingService
 from app.core.config.dependencies import get_meeting_service
 
 router = APIRouter(prefix="/api", tags=["Meetings"])
-
 
 @router.post(
     "/analyze/file",
@@ -25,15 +24,19 @@ router = APIRouter(prefix="/api", tags=["Meetings"])
 )
 async def analyze_file(
     file: UploadFile = File(
-        ..., 
+        ...,
         description="The plain text (.txt) file containing the raw meeting notes/transcript."
+    ),
+    context: str = Form(
+        default="",
+        description="Optional viewer context (e.g. 'I am an HR manager'). Tailors the summary to that perspective."
     ),
     service: MeetingService = Depends(get_meeting_service)
 ) -> ApiResponse[AnalyzeResponse]:
     """
     Endpoint to process meeting notes uploaded directly as a plain text file.
     """
-    return await service.process_analysis_file(file)
+    return await service.process_analysis_file(file, context)
 
 @router.post(
     "/chat",

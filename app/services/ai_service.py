@@ -24,17 +24,17 @@ class AiService:
         self._client = AsyncOpenAI(api_key=self._api_key)
 
 
-    async def analyze_transcript(self, transcript: str) -> dict[str, Any]:
+    async def analyze_transcript(self, transcript: str, context: str = "") -> dict[str, Any]:
         """
-            Calls OpenAI using Structured Outputs to generate an executive summary
-            and extract action items prioritized via the Eisenhower Matrix.
-            Uses the SummarizationModel to preprocess the transcript using a Map-Reduce approach.
+        Calls OpenAI using Structured Outputs to generate an executive summary
+        and extract action items prioritized via the Eisenhower Matrix.
+        Uses the SummarizationModel to preprocess the transcript using a Map-Reduce approach.
+        If a viewer context is provided, the summary is tailored to that perspective.
         """
         if not self._api_key:
             raise AiServiceError(
                 "OpenAI API Key is not configured. Please set the OPENAI_API_KEY environment variable."
             )
-
         try:
             from app.llm import SummarizationModel, AnalysisModel
 
@@ -44,34 +44,30 @@ class AiService:
                 temperature=self.model_temperature,
                 max_tokens=self.model_max_tokens,
                 map_prompt=load_map_prompt(),
-                reduce_prompt=load_reduce_prompt(),
+                reduce_prompt=load_reduce_prompt(context=context),
             )
-
             analyzer = AnalysisModel(
                 api_key=self._api_key,
                 model=self.model_name,
                 temperature=self.model_temperature,
                 max_tokens=self.model_max_tokens,
-                system_instruction=load_system_instruction(),
+                system_instruction=load_system_instruction(context=context),
             )
 
             summarized_content = await summarizer.summarize(transcript)
-
             response_data = await analyzer.analyze(
-                content=f"Meeting Transcript Summary:\n{summarized_content}",
-                response_format=AnalyzeResponse,
-                timeout=10.0,
+            content=f"Meeting Transcript Summary:\n{summarized_content}",
+            response_format=AnalyzeResponse,
+            timeout=10.0,
             )
-
             response_dict = response_data.model_dump()
             response_dict["transcript"] = transcript
-
             return response_dict
 
         except AiServiceError:
             raise
         except Exception as e:
-            raise AiServiceError(f"Error calling OpenAI parsing service: {str(e)}")
+            raise AiServiceError(f"Error during transcript analysis: {str(e)}")
 
 
     async def chat_with_transcript(self, transcript: str, question: str) -> str:
