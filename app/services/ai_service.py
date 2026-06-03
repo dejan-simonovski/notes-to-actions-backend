@@ -1,5 +1,4 @@
-import os
-from typing import Any, Dict
+from typing import Any
 from openai import AsyncOpenAI
 from app.schemas.meeting_schema import AnalyzeResponse
 from app.exceptions.meeting_exception import AiServiceError
@@ -117,9 +116,9 @@ class AiService:
             "'Generate Insights'. The AI extracts an executive summary and action items prioritized by the "
             "Eisenhower Matrix (Urgent & Important, Important but Not Urgent, Urgent but Not Important, Low Priority).\n"
             "- Meeting Results (/meeting/:id): Shows the original transcript, AI summary, key decisions, "
-            "action items with assignees and statuses, and key topics.\n"
+            "action items with assignees, statuses, and their Eisenhower Matrix priority. Users can also click 'Export PDF' on this page to download their meeting notes as a PDF document.\n"
             "- Action Items Board (/action-items): Kanban board with To Do, In Progress, and Done columns. "
-            "Aggregates all tasks across every analyzed meeting.\n"
+            "Aggregates all tasks across every analyzed meeting. Users can check the Eisenhower priority labels on the task cards here.\n"
             "- Meeting Assistant (this chatbot): Answers navigation questions about the app OR questions about "
             "the currently open meeting transcript, OR global questions about ALL past meetings and tasks.\n"
             "- Slack Integration: After each meeting is analyzed, results are automatically posted to a "
@@ -129,7 +128,7 @@ class AiService:
             "- CRITICAL: If the user asks a question about their meetings, tasks, topics, or dates (e.g. 'what are my to-do tasks', 'when did we talk about sprint'), you MUST answer the question DIRECTLY by analyzing the CURRENT MEETING CONTEXT and the GLOBAL MEETINGS DATABASE provided below.\n"
             "- Do NOT tell the user to navigate to a page (like the Dashboard or Action Items Board) to find the answer themselves. You must extract the data from your memory and give it to them.\n"
             "- If the provided context and global memory are completely empty, politely tell the user 'I don't have any meetings in my memory yet. Please analyze a meeting first.'\n"
-            "- If the user asks a purely educational question about how to use the app itself (e.g. 'how do I upload a file'), answer with navigation and feature instructions.\n"
+            "- If the user asks a purely educational question about how to use the app itself (e.g. 'how do I upload a file', 'how do I export a PDF'), answer with navigation and feature instructions.\n"
             "- If the answer is not in the transcript, global context, or related to the app, say so politely and briefly.\n"
             "- Always be concise, friendly, and professional.\n\n"
 

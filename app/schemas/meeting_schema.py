@@ -118,6 +118,10 @@ class ChatRequest(BaseModel):
         default=None,
         description="The AI-generated action items from the meeting, if available."
     )
+    global_meetings: Optional[List[dict]] = Field(
+        default=None,
+        description="A list of all past meetings and their tasks for global context queries."
+    )
 
 class ChatResponse(BaseModel):
     """
