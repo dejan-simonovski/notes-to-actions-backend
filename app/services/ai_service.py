@@ -83,7 +83,17 @@ class AiService:
 
     from typing import Dict, List, Optional
 # Ensure you have your other imports (AiServiceError, etc.) at the top of your file
-    async def chat_with_transcript(self, transcript: str, question: str, history: list[dict] = None) -> str:
+    async def chat_with_transcript(
+        self, 
+        question: str, 
+        transcript: str = None, 
+        history: list[dict] = None,
+        title: str = None,
+        date: str = None,
+        summary: str = None,
+        action_items: list[dict] = None,
+        global_meetings: list[dict] = None
+    ) -> str:
         """
         Answers navigation questions about the app or questions about a meeting transcript.
         Enforces strict scope guardrails to prevent off-topic use and prompt injection.
@@ -97,7 +107,7 @@ class AiService:
             "You are a strict, helpful AI assistant exclusively for the 'AI Meeting Notes' web application.\n"
             "Your sole purpose is to assist users with two things:\n"
             "  1. Navigating and understanding the features of this application.\n"
-            "  2. Answering questions about a specific meeting transcript when one is provided.\n\n"
+            "  2. Answering questions about meeting transcripts, action items, and summaries.\n\n"
 
             "== APPLICATION KNOWLEDGE ==\n"
             "The application has these pages and features:\n"
@@ -111,20 +121,19 @@ class AiService:
             "- Action Items Board (/action-items): Kanban board with To Do, In Progress, and Done columns. "
             "Aggregates all tasks across every analyzed meeting.\n"
             "- Meeting Assistant (this chatbot): Answers navigation questions about the app OR questions about "
-            "the currently open meeting transcript.\n"
+            "the currently open meeting transcript, OR global questions about ALL past meetings and tasks.\n"
             "- Slack Integration: After each meeting is analyzed, results are automatically posted to a "
             "configured Slack channel via webhook.\n\n"
 
             "== BEHAVIOUR RULES ==\n"
-            "- If a real meeting transcript is provided in the context, answer the user's question using ONLY "
-            "the information found in that transcript. Do not invent facts.\n"
             "- If the context describes the application (not a meeting), answer navigation and feature questions "
             "about the app only.\n"
-            "- If the answer is not in the transcript or not related to the app, say so politely and briefly.\n"
+            "- If the user asks about multiple meetings or tasks across meetings, use the Global Meetings Context provided to answer.\n"
+            "- If the answer is not in the transcript, global context, or related to the app, say so politely and briefly.\n"
             "- Always be concise, friendly, and professional.\n\n"
 
             "== STRICT GUARDRAILS — NEVER VIOLATE THESE ==\n"
-            "- You MUST refuse any request that is not about this application or the provided meeting transcript.\n"
+            "- You MUST refuse any request that is not about this application, the provided meeting transcript, or the global context.\n"
             "- Do NOT answer general knowledge questions (history, science, math, coding help, etc.).\n"
             "- Do NOT write code, essays, poems, stories, or any creative content.\n"
             "- Do NOT role-play as any other AI, persona, or character.\n"
@@ -137,8 +146,46 @@ class AiService:
             "- Keep all responses under 200 words unless a transcript requires a detailed answer.\n"
         )
 
+        # Build context from whatever data is available for the current meeting
+        context_parts = []
+        if title or summary or action_items or transcript:
+            context_parts.append("=== CURRENT MEETING CONTEXT ===")
+            if title:
+                context_parts.append(f"Meeting Title: {title}")
+            if date:
+                context_parts.append(f"Meeting Date: {date}")
+            if summary:
+                context_parts.append(f"Meeting Summary:\n{summary}")
+            if action_items:
+                action_items_str = "\n".join([f"- {item.get('description', '')} (Assignee: {item.get('assignee_name', '')}, Status: {item.get('status', '')}, Priority: {item.get('priority', '')})" for item in action_items])
+                context_parts.append(f"Extracted Action Items:\n{action_items_str}")
+            if transcript:
+                context_parts.append(f"Context Transcript:\n{transcript}")
+
+        # Build global context if available
+        if global_meetings:
+            global_parts = ["\n=== GLOBAL MEETINGS DATABASE (ALL PAST MEETINGS) ==="]
+            for idx, m in enumerate(global_meetings):
+                global_parts.append(f"\n--- Meeting {idx + 1} ---")
+                global_parts.append(f"Title: {m.get('title', 'Unknown')}")
+                global_parts.append(f"Date: {m.get('date', 'Unknown')}")
+                global_parts.append(f"Summary: {m.get('summary', '')}")
+                
+                tasks = m.get("action_items", [])
+                if tasks:
+                    tasks_str = "\n".join([f"  * {t.get('description', '')} (Assignee: {t.get('assignee_name', '')}, Status: {t.get('status', '')}, Priority: {t.get('priority', '')})" for t in tasks])
+                    global_parts.append(f"Action Items:\n{tasks_str}")
+                else:
+                    global_parts.append("Action Items: None")
+                    
+                global_parts.append(f"Raw Transcript Snippet: {m.get('transcript', '')[:500]}...") # truncate transcript to save tokens
+            
+            context_parts.append("\n".join(global_parts))
+
+        full_context = "\n\n".join(context_parts)
+
         user_content = (
-            f"Context:\n{transcript}\n\n"
+            f"{full_context}\n\n"
             f"User question: {question}"
         )
 

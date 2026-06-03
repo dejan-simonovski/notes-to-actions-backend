@@ -89,10 +89,9 @@ class ChatRequest(BaseModel):
     """
     Schema for asking questions about a meeting transcript with conversation history.
     """
-    transcript: str = Field(
-        ..., 
-        min_length=10, 
-        description="The full raw text transcript of the meeting."
+    transcript: Optional[str] = Field(
+        default=None, 
+        description="The full raw text transcript of the meeting. Optional if asking a global question."
     )
     question: str = Field(
         ..., 
@@ -102,6 +101,22 @@ class ChatRequest(BaseModel):
     history: Optional[List[ChatMessage]] = Field(
         default=[], 
         description="Previous messages in the conversation to provide context."
+    )
+    title: Optional[str] = Field(
+        default=None,
+        description="The title of the meeting, if available."
+    )
+    date: Optional[str] = Field(
+        default=None,
+        description="The date of the meeting, if available."
+    )
+    summary: Optional[str] = Field(
+        default=None,
+        description="The AI-generated executive summary of the meeting, if available."
+    )
+    action_items: Optional[List[ActionItem]] = Field(
+        default=None,
+        description="The AI-generated action items from the meeting, if available."
     )
 
 class ChatResponse(BaseModel):

@@ -12,6 +12,9 @@ from app.services.ai_service import AiService
 from app.core.config.meeting_config import MeetingConfig
 from app.core.utils import document_utils
 
+# In-memory store for global chatbot context
+GLOBAL_MEETINGS_STORE = []
+
 class MeetingService:
     """
     Orchestration layer coordinates text extraction, AI processing, and webhook triggers.
@@ -97,6 +100,15 @@ class MeetingService:
         # 3. Trigger Slack integration in background asynchronously
         asyncio.create_task(self._send_slack_webhook(analyze_response))
 
+        # 4. Save to global store for chatbot context
+        GLOBAL_MEETINGS_STORE.append({
+            "title": request.title,
+            "date": request.date,
+            "summary": analyze_response.summary,
+            "action_items": [item.model_dump() for item in analyze_response.action_items],
+            "transcript": raw_text
+        })
+
         return ApiResponse[AnalyzeResponse](
             success=True,
             message="Meeting transcript from URL successfully analyzed.",
@@ -117,6 +129,14 @@ class MeetingService:
 
         asyncio.create_task(self._send_slack_webhook(analyze_response))
 
+        GLOBAL_MEETINGS_STORE.append({
+            "title": analyze_response.title,
+            "date": "Unknown Date",  # files don't receive date from the frontend currently
+            "summary": analyze_response.summary,
+            "action_items": [item.model_dump() for item in analyze_response.action_items],
+            "transcript": raw_text
+        })
+
         return ApiResponse[AnalyzeResponse](
             success=True,
             message="Uploaded transcript file successfully analyzed.",
@@ -134,7 +154,12 @@ class MeetingService:
         answer_text = await self._ai_service.chat_with_transcript(
             transcript=request.transcript,
             question=request.question,
-            history=history_dicts
+            history=history_dicts,
+            title=request.title,
+            date=request.date,
+            summary=request.summary,
+            action_items=[item.model_dump() for item in request.action_items] if request.action_items else None,
+            global_meetings=GLOBAL_MEETINGS_STORE
         )
 
         chat_response = ChatResponse(answer=answer_text)
