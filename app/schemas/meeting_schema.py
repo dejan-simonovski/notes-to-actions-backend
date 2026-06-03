@@ -77,6 +77,10 @@ class AnalyzeResponse(BaseModel):
         ...,
         description="List of key topics discussed in the meeting."
     )
+    transcript: str = Field(
+        ...,
+        description="Full Transcript of the meeting."
+    )
 
 class ChatRequest(BaseModel):
     """

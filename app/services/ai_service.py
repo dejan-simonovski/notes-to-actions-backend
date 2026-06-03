@@ -63,7 +63,10 @@ class AiService:
                 timeout=10.0,
             )
 
-            return response_data.model_dump()
+            response_dict = response_data.model_dump()
+            response_dict["transcript"] = transcript
+
+            return response_dict
 
         except AiServiceError:
             raise
