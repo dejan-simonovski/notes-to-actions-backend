@@ -83,20 +83,11 @@ class AiService:
 
     from typing import Dict, List, Optional
 # Ensure you have your other imports (AiServiceError, etc.) at the top of your file
-
-    async def chat_with_transcript(
-        self, 
-        transcript: str, 
-        question: str, 
-        chat_history: Optional[List[Dict[str, str]]] = None
-    ) -> str:
+    async def chat_with_transcript(self, transcript: str, question: str, history: list[dict] = None) -> str:
         """
         Answers navigation questions about the app or questions about a meeting transcript.
-        Maintains conversation history for follow-up questions and enforces strict scope guardrails.
+        Enforces strict scope guardrails to prevent off-topic use and prompt injection.
         """
-        if chat_history is None:
-            chat_history = []
-
         if not self._api_key or self._api_key == "mock-key-replace-this-to-test-live-openai":
             raise AiServiceError(
                 "OpenAI API Key is not configured. Please set the OPENAI_API_KEY environment variable."
@@ -146,20 +137,17 @@ class AiService:
             "- Keep all responses under 200 words unless a transcript requires a detailed answer.\n"
         )
 
-        # 1. Embed the transcript into the system prompt context
-        full_system_prompt = (
-            f"{system_instruction}\n\n"
-            f"== CURRENT TRANSCRIPT CONTEXT ==\n{transcript}"
+        user_content = (
+            f"Context:\n{transcript}\n\n"
+            f"User question: {question}"
         )
 
-        # 2. Start the messages array with the system instruction
-        messages = [{"role": "system", "content": full_system_prompt}]
-
-        # 3. Append the historical messages to maintain conversation context
-        messages.extend(chat_history)
-
-        # 4. Append the newest user question
-        messages.append({"role": "user", "content": question})
+        messages = [{"role": "system", "content": system_instruction}]
+        
+        if history:
+            messages.extend(history)
+            
+        messages.append({"role": "user", "content": user_content})
 
         try:
             completion = await self._client.chat.completions.create(

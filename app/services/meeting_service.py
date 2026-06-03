@@ -125,12 +125,16 @@ class MeetingService:
 
     async def process_chat(self, request: ChatRequest) -> ApiResponse[ChatResponse]:
         """
-        Interacts with the AI service to answer a specific question on a transcript.
+        Interacts with the AI service to answer a specific question on a transcript,
+        maintaining conversation history.
         """
+        # Convert Pydantic models to dicts for the AI service
+        history_dicts = [{"role": msg.role, "content": msg.content} for msg in request.history] if request.history else []
+        
         answer_text = await self._ai_service.chat_with_transcript(
             transcript=request.transcript,
             question=request.question,
-            chat_history=request.chat_history
+            history=history_dicts
         )
 
         chat_response = ChatResponse(answer=answer_text)

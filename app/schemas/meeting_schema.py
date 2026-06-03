@@ -78,9 +78,16 @@ class AnalyzeResponse(BaseModel):
         description="List of key topics discussed in the meeting."
     )
 
+class ChatMessage(BaseModel):
+    """
+    Schema for a single message in the conversation history.
+    """
+    role: str = Field(..., description="Role of the sender (e.g. 'user' or 'assistant').")
+    content: str = Field(..., description="The content of the message.")
+
 class ChatRequest(BaseModel):
     """
-    Schema for asking questions about a meeting transcript.
+    Schema for asking questions about a meeting transcript with conversation history.
     """
     transcript: str = Field(
         ..., 
@@ -92,9 +99,9 @@ class ChatRequest(BaseModel):
         min_length=1, 
         description="The specific question the user has about the meeting notes."
     )
-    chat_history: Optional[list[dict[str, str]]] = Field(
-        default_factory=list,
-        description="Previous messages in the conversation to maintain context."
+    history: Optional[List[ChatMessage]] = Field(
+        default=[], 
+        description="Previous messages in the conversation to provide context."
     )
 
 class ChatResponse(BaseModel):
