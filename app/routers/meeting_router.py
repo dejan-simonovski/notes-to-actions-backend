@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api", tags=["Meetings"])
     )
 )
 async def analyze_file(
-    file: UploadFile = File(
+    transcript: UploadFile = File(
         ...,
         description="The plain text (.txt) file containing the raw meeting notes/transcript."
     ),
@@ -36,7 +36,7 @@ async def analyze_file(
     """
     Endpoint to process meeting notes uploaded directly as a plain text file.
     """
-    return await service.process_analysis_file(file, context)
+    return await service.process_analysis_file(transcript, context)
 
 @router.post(
     "/chat",
