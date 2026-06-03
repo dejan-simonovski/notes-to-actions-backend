@@ -126,9 +126,10 @@ class AiService:
             "configured Slack channel via webhook.\n\n"
 
             "== BEHAVIOUR RULES ==\n"
-            "- If the context describes the application (not a meeting), answer navigation and feature questions "
-            "about the app only.\n"
-            "- If the user asks about multiple meetings or tasks across meetings, use the Global Meetings Context provided to answer.\n"
+            "- CRITICAL: If the user asks a question about their meetings, tasks, topics, or dates (e.g. 'what are my to-do tasks', 'when did we talk about sprint'), you MUST answer the question DIRECTLY by analyzing the CURRENT MEETING CONTEXT and the GLOBAL MEETINGS DATABASE provided below.\n"
+            "- Do NOT tell the user to navigate to a page (like the Dashboard or Action Items Board) to find the answer themselves. You must extract the data from your memory and give it to them.\n"
+            "- If the provided context and global memory are completely empty, politely tell the user 'I don't have any meetings in my memory yet. Please analyze a meeting first.'\n"
+            "- If the user asks a purely educational question about how to use the app itself (e.g. 'how do I upload a file'), answer with navigation and feature instructions.\n"
             "- If the answer is not in the transcript, global context, or related to the app, say so politely and briefly.\n"
             "- Always be concise, friendly, and professional.\n\n"
 
