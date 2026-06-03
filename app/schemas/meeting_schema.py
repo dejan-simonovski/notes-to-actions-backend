@@ -92,6 +92,10 @@ class ChatRequest(BaseModel):
         min_length=1, 
         description="The specific question the user has about the meeting notes."
     )
+    chat_history: Optional[list[dict[str, str]]] = Field(
+        default_factory=list,
+        description="Previous messages in the conversation to maintain context."
+    )
 
 class ChatResponse(BaseModel):
     """

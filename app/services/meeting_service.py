@@ -129,7 +129,8 @@ class MeetingService:
         """
         answer_text = await self._ai_service.chat_with_transcript(
             transcript=request.transcript,
-            question=request.question
+            question=request.question,
+            chat_history=request.chat_history
         )
 
         chat_response = ChatResponse(answer=answer_text)

@@ -11,7 +11,6 @@ from app.core.config.dependencies import get_meeting_service
 
 router = APIRouter(prefix="/api", tags=["Meetings"])
 
-
 @router.post(
     "/analyze/file",
     response_model=ApiResponse[AnalyzeResponse],
@@ -41,8 +40,8 @@ async def analyze_file(
     status_code=status.HTTP_200_OK,
     summary="Interactive Q&A on meeting notes transcript",
     description=(
-        "Allows users to ask questions about the meeting and receive direct answers "
-        "sourced strictly from the provided meeting notes transcript context."
+        "Allows users to ask questions about the meeting and receive direct answers. "
+        "Maintains conversation history for follow-up questions."
     )
 )
 async def chat(
@@ -52,4 +51,5 @@ async def chat(
     """
     Endpoint for context-bound conversational QA about the transcript.
     """
+    # The request object now contains request.chat_history automatically!
     return await service.process_chat(request)
