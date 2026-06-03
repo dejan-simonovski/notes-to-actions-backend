@@ -19,8 +19,13 @@ class OpenaiSettings(BaseSettings):
         validation_alias="OPENAI_MAX_TOKENS"
     )
 
+    GEMINI_API_KEY: str = Field(
+        default="",
+        validation_alias="GEMINI_API_KEY"
+    )
+
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=".env.chatbot",
         extra="ignore"
     )
 

@@ -97,10 +97,16 @@ class AiService:
         Answers navigation questions about the app or questions about a meeting transcript.
         Enforces strict scope guardrails to prevent off-topic use and prompt injection.
         """
-        if not self._api_key or self._api_key == "mock-key-replace-this-to-test-live-openai":
+        gemini_api_key = settings.GEMINI_API_KEY
+        if not gemini_api_key or gemini_api_key == "mock-key-replace-this-to-test-live-gemini":
             raise AiServiceError(
-                "OpenAI API Key is not configured. Please set the OPENAI_API_KEY environment variable."
+                "Gemini API Key is not configured. Please set the GEMINI_API_KEY environment variable."
             )
+
+        chat_client = AsyncOpenAI(
+            api_key=gemini_api_key,
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        )
 
         system_instruction = (
             "You are a strict, helpful AI assistant exclusively for the 'AI Meeting Notes' web application.\n"
@@ -197,7 +203,7 @@ class AiService:
         messages.append({"role": "user", "content": user_content})
 
         try:
-            completion = await self._client.chat.completions.create(
+            completion = await chat_client.chat.completions.create(
                 model="gemini-2.5-flash-lite",
                 messages=messages,
                 max_tokens=300,
